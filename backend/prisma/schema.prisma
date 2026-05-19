@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RelationshipType {
+  FRIEND
+  LOVER
+}
+
+model User {
+  id               String           @id @default(uuid())
+  email            String           @unique
+  passwordHash     String
+  name             String
+  username         String?          @unique
+  dateOfBirth      DateTime
+  zodiacSign       String
+  relationshipType RelationshipType
+  createdAt        DateTime         @default(now())
+
+  answers       Answer[]
+  partnerLinksA PartnerLink[] @relation("UserA")
+  partnerLinksB PartnerLink[] @relation("UserB")
+}
+
+model Question {
+  id      Int      @id @default(autoincrement())
+  set     Int
+  text    String
+  answers Answer[]
+}
+
+model Answer {
+  id          String    @id @default(uuid())
+  userId      String
+  questionId  Int
+  text        String
+  submittedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  user     User     @relation(fields: [userId], references: [id])
+  question Question @relation(fields: [questionId], references: [id])
+
+  @@unique([userId, questionId])
+}
+
+model PartnerLink {
+  id         String    @id @default(uuid())
+  inviteCode String    @unique
+  userIdA    String
+  userIdB    String?
+  linkedAt   DateTime?
+  createdAt  DateTime  @default(now())
+
+  userA User  @relation("UserA", fields: [userIdA], references: [id])
+  userB User? @relation("UserB", fields: [userIdB], references: [id])
+}

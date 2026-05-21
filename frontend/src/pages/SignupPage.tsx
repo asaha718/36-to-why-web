@@ -72,6 +72,8 @@ export default function SignupPage() {
       }
 
       localStorage.setItem("sessionId", data.sessionId);
+      localStorage.setItem("userName", data.user.name);
+      window.dispatchEvent(new Event("authChange"));
       setStatus("success");
     } catch {
       setErrorMsg("Could not reach the server. Is the backend running?");

@@ -40,7 +40,7 @@ export default function LoginPage() {
       localStorage.setItem("sessionId", data.sessionId);
       localStorage.setItem("userName", data.user.name);
       window.dispatchEvent(new Event("authChange"));
-      navigate("/");
+      navigate("/dashboard");
     } catch {
       setErrorMsg("Could not reach the server. Is the backend running?");
       setStatus("error");

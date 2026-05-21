@@ -1,8 +1,11 @@
 import { Routes, Route } from "react-router-dom";
 import NavBar from "./components/NavBar";
+import RequireAuth from "./components/RequireAuth";
 import HomePage from "./pages/HomePage";
-import SignupPage from "./pages/SignupPage";
 import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import DashboardPage from "./pages/DashboardPage";
+import QuestionsPage from "./pages/QuestionsPage";
 
 export default function App() {
   return (
@@ -10,8 +13,10 @@ export default function App() {
       <NavBar />
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
+        <Route path="/questions" element={<RequireAuth><QuestionsPage /></RequireAuth>} />
       </Routes>
     </>
   );

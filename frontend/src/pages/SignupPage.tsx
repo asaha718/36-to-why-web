@@ -96,7 +96,7 @@ export default function SignupPage() {
             </p>
           )}
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/dashboard")}
             className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
           >
             Start exploring

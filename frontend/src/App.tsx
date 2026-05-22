@@ -6,6 +6,7 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import DashboardPage from "./pages/DashboardPage";
 import QuestionsPage from "./pages/QuestionsPage";
+import LinkPartnerPage from "./pages/LinkPartnerPage";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
         <Route path="/questions" element={<RequireAuth><QuestionsPage /></RequireAuth>} />
+        <Route path="/partner" element={<RequireAuth><LinkPartnerPage /></RequireAuth>} />
       </Routes>
     </>
   );

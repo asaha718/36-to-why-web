@@ -1,8 +1,11 @@
 import "dotenv/config";
+import http from "http";
 import express from "express";
 import cors from "cors";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { PrismaClient } from "@prisma/client";
+import { Server as SocketServer } from "socket.io";
 import { getZodiacSign } from "./utils/zodiac";
 
 const app = express();
@@ -11,6 +14,19 @@ const PORT = process.env.PORT ?? 3001;
 
 app.use(cors({ origin: process.env.FRONTEND_URL ?? "http://localhost:5173" }));
 app.use(express.json());
+
+const server = http.createServer(app);
+const io = new SocketServer(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL ?? "http://localhost:5173",
+    methods: ["GET", "POST"],
+  },
+});
+
+io.on("connection", (socket) => {
+  const sessionId = socket.handshake.query["sessionId"] as string | undefined;
+  if (sessionId) socket.join(sessionId);
+});
 
 async function requireAuth(req: express.Request, res: express.Response): Promise<string | null> {
   const sessionId = req.headers["x-session-id"] as string | undefined;
@@ -139,11 +155,110 @@ app.post("/api/answers", async (req, res) => {
   }
 });
 
+app.post("/api/partner/invite", async (req, res) => {
+  const userId = await requireAuth(req, res);
+  if (!userId) return;
+
+  const inviteCode = crypto.randomBytes(3).toString("hex").toUpperCase();
+
+  try {
+    const link = await prisma.partnerLink.create({
+      data: { inviteCode, userIdA: userId },
+    });
+    res.status(201).json({ inviteCode: link.inviteCode, id: link.id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.post("/api/partner/link", async (req, res) => {
+  const userId = await requireAuth(req, res);
+  if (!userId) return;
+
+  const { inviteCode } = req.body as { inviteCode?: string };
+  if (!inviteCode) {
+    res.status(400).json({ error: "inviteCode is required." });
+    return;
+  }
+
+  try {
+    const link = await prisma.partnerLink.findUnique({ where: { inviteCode } });
+
+    if (!link) {
+      res.status(404).json({ error: "Invalid invite code." });
+      return;
+    }
+    if (link.userIdB !== null) {
+      res.status(409).json({ error: "This invite code has already been used." });
+      return;
+    }
+    if (link.userIdA === userId) {
+      res.status(400).json({ error: "You cannot link with yourself." });
+      return;
+    }
+
+    const caller = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+
+    const updated = await prisma.partnerLink.update({
+      where: { inviteCode },
+      data: { userIdB: userId, linkedAt: new Date() },
+    });
+
+    io.to(link.userIdA).emit("partnerLinked", {
+      partnerName: caller?.name ?? "Someone",
+      inviteCode,
+    });
+
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.get("/api/partner/links", async (req, res) => {
+  const userId = await requireAuth(req, res);
+  if (!userId) return;
+
+  try {
+    const links = await prisma.partnerLink.findMany({
+      where: {
+        OR: [{ userIdA: userId }, { userIdB: userId }],
+        linkedAt: { not: null },
+      },
+      include: {
+        userA: { select: { id: true, name: true } },
+        userB: { select: { id: true, name: true } },
+      },
+      orderBy: { linkedAt: "desc" },
+    });
+
+    const result = links.map((l) => {
+      const partner = l.userIdA === userId ? l.userB : l.userA;
+      return {
+        id: l.id,
+        inviteCode: l.inviteCode,
+        linkedAt: l.linkedAt,
+        partner: partner ? { id: partner.id, name: partner.name } : null,
+      };
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 async function main() {
   await prisma.$connect();
   console.log("Database connected");
 
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`Backend running at http://localhost:${PORT}`);
   });
 }

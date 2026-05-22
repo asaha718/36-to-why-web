@@ -23,11 +23,13 @@ const io = new SocketServer(server, {
   },
 });
 
+// Each socket joins a room named by its sessionId so we can emit to a specific user later.
 io.on("connection", (socket) => {
   const sessionId = socket.handshake.query["sessionId"] as string | undefined;
   if (sessionId) socket.join(sessionId);
 });
 
+// Reads X-Session-Id header and validates it against the users table. Returns userId or sends 401.
 async function requireAuth(req: express.Request, res: express.Response): Promise<string | null> {
   const sessionId = req.headers["x-session-id"] as string | undefined;
   if (!sessionId) {
@@ -42,10 +44,12 @@ async function requireAuth(req: express.Request, res: express.Response): Promise
   return user.id;
 }
 
+// Health check — used to verify the server is up.
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// Returns all 36 questions ordered by set then id.
 app.get("/api/questions", async (_req, res) => {
   try {
     const questions = await prisma.question.findMany({
@@ -58,6 +62,7 @@ app.get("/api/questions", async (_req, res) => {
   }
 });
 
+// Creates a new user account, calculates their zodiac sign, and returns a session.
 app.post("/api/profile", async (req, res) => {
   const { name, username, email, password, dateOfBirth, relationshipType } = req.body;
 
@@ -92,6 +97,7 @@ app.post("/api/profile", async (req, res) => {
   res.status(201).json({ sessionId: user.id, user });
 });
 
+// Validates email + password and returns a session if credentials are correct.
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -116,6 +122,7 @@ app.post("/api/auth/login", async (req, res) => {
   res.json({ sessionId: user.id, user: safeUser });
 });
 
+// Returns all answers the authenticated user has submitted.
 app.get("/api/answers", async (req, res) => {
   const userId = await requireAuth(req, res);
   if (!userId) return;
@@ -132,6 +139,7 @@ app.get("/api/answers", async (req, res) => {
   }
 });
 
+// Creates or updates the authenticated user's answer for a given question (upsert).
 app.post("/api/answers", async (req, res) => {
   const userId = await requireAuth(req, res);
   if (!userId) return;
@@ -155,6 +163,7 @@ app.post("/api/answers", async (req, res) => {
   }
 });
 
+// Generates a one-time 6-character invite code the user can share to link a partner.
 app.post("/api/partner/invite", async (req, res) => {
   const userId = await requireAuth(req, res);
   if (!userId) return;
@@ -172,6 +181,7 @@ app.post("/api/partner/invite", async (req, res) => {
   }
 });
 
+// Accepts an invite code, links the caller as the second partner, and notifies the inviter via Socket.io.
 app.post("/api/partner/link", async (req, res) => {
   const userId = await requireAuth(req, res);
   if (!userId) return;
@@ -220,6 +230,7 @@ app.post("/api/partner/link", async (req, res) => {
   }
 });
 
+// Returns all active partner connections (both directions) for the authenticated user.
 app.get("/api/partner/links", async (req, res) => {
   const userId = await requireAuth(req, res);
   if (!userId) return;

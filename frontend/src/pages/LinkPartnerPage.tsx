@@ -215,16 +215,21 @@ export default function LinkPartnerPage() {
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Your Partners</h2>
             <ul className="space-y-3">
               {partners.map((p) => (
-                <li key={p.id} className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold text-sm flex-shrink-0">
-                    {p.partner?.name?.[0]?.toUpperCase() ?? "?"}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{p.partner?.name ?? "Unknown"}</p>
-                    <p className="text-xs text-gray-400">
-                      Linked {new Date(p.linkedAt).toLocaleDateString()}
-                    </p>
-                  </div>
+                <li key={p.id}>
+                  <Link
+                    to={p.partner ? `/partner/${p.partner.id}` : "#"}
+                    className="flex items-center gap-3 hover:bg-gray-50 rounded-xl px-2 py-1 -mx-2 transition-colors"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold text-sm flex-shrink-0">
+                      {p.partner?.name?.[0]?.toUpperCase() ?? "?"}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{p.partner?.name ?? "Unknown"}</p>
+                      <p className="text-xs text-gray-400">
+                        Linked {new Date(p.linkedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </Link>
                 </li>
               ))}
             </ul>

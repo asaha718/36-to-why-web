@@ -7,6 +7,7 @@ import SignupPage from "./pages/SignupPage";
 import DashboardPage from "./pages/DashboardPage";
 import QuestionsPage from "./pages/QuestionsPage";
 import LinkPartnerPage from "./pages/LinkPartnerPage";
+import PartnerAnswersPage from "./pages/PartnerAnswersPage";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
         <Route path="/questions" element={<RequireAuth><QuestionsPage /></RequireAuth>} />
         <Route path="/partner" element={<RequireAuth><LinkPartnerPage /></RequireAuth>} />
+        <Route path="/partner/:partnerId" element={<RequireAuth><PartnerAnswersPage /></RequireAuth>} />
       </Routes>
     </>
   );
